@@ -1,0 +1,27 @@
+project:
+  id: DUF
+  name: DUF
+  owner: Maple & Pine Co.
+  studio: WiseMinds Studios
+  final_authority: Malachi Dawkins
+  repository: pineandmapleco-lang/Duf
+governance:
+  canon_status_required: true
+  obsidian_lock_policy: true
+  external_research_is_canon: false
+  repository_presence_is_canon: false
+continuity:
+  narrative_independence: high
+  cosmological_isolation: false
+  shared_systems:
+    - Gideon Cross occult routing
+    - PHΔDE CELL Doomstone continuity
+    - Major Trammell composite fusion
+    - Crossroads Earth classification
+mirror:
+  implementation_stage: phase_2
+  notion_links_verified: false
+  google_drive_configured: false
+  local_mirror_configured: false
+branch:
+  implementation: claude/phase-2-drive-repo-mirror-6rwbch
