@@ -1,0 +1,98 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+
+  /* Base command-center surfaces (desaturated near-black, not pure #000) */
+  --color-mp-bg: #0b0d10;
+  --color-mp-bg-raised: #101318;
+  --color-mp-panel: #14171d;
+  --color-mp-panel-hover: #191d24;
+  --color-mp-border: #262b34;
+  --color-mp-border-soft: #1c2028;
+
+  /* Text */
+  --color-mp-text: #e6e8ec;
+  --color-mp-text-muted: #9aa1ad;
+  --color-mp-text-faint: #656d7a;
+
+  /* Primary accent — interactive elements / highlights */
+  --color-mp-accent: #5eead4;
+  --color-mp-accent-strong: #2dd4bf;
+  --color-mp-accent-bg: rgba(94, 234, 212, 0.1);
+  --color-mp-accent-border: rgba(94, 234, 212, 0.35);
+
+  /* Revenue accent — muted gold, visually distinct as "money" */
+  --color-mp-gold: #d4af6a;
+  --color-mp-gold-strong: #e8c988;
+  --color-mp-gold-bg: rgba(212, 175, 106, 0.1);
+  --color-mp-gold-border: rgba(212, 175, 106, 0.3);
+  --color-mp-money-bg: #14120c;
+  --color-mp-money-panel: #1a1710;
+
+  /* Status palette — used consistently for tasks / projects / calendar */
+  --color-mp-status-good: #4ade80;
+  --color-mp-status-good-bg: rgba(74, 222, 128, 0.12);
+  --color-mp-status-good-border: rgba(74, 222, 128, 0.3);
+
+  --color-mp-status-warn: #fbbf24;
+  --color-mp-status-warn-bg: rgba(251, 191, 36, 0.12);
+  --color-mp-status-warn-border: rgba(251, 191, 36, 0.3);
+
+  --color-mp-status-bad: #f87171;
+  --color-mp-status-bad-bg: rgba(248, 113, 113, 0.12);
+  --color-mp-status-bad-border: rgba(248, 113, 113, 0.3);
+
+  --animate-fade-in: fade-in 0.4s ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--color-mp-bg);
+  color: var(--color-mp-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+* {
+  scrollbar-color: var(--color-mp-border) transparent;
+  scrollbar-width: thin;
+}
+
+::selection {
+  background: var(--color-mp-accent-bg);
+  color: var(--color-mp-accent);
+}
+
+/* Respect reduced-motion preference for the "subtle motion only" design goal */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
