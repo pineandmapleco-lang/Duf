@@ -8,7 +8,9 @@
 **Implementation authority:** Not granted by this amendment
 **Commercial intent:** From concept → playable prototype → validated product → protected brand/IP → manufactured/published commercial release → expansions → special editions → long-term live catalog
 
-This record preserves the original amendment intake text verbatim for audit and provenance. The governing, structured version of this content lives in [`founder-edition-prd-v0.2.md`](../founder-edition-prd-v0.2.md) §2–§5, which this record supersedes for all working purposes.
+This record preserves the original amendment intake text verbatim for audit and provenance. The governing, structured version of this content lives in [`founder-edition-prd-v0.2.md`](../founder-edition-prd-v0.2.md) §6–§21, integrated against the real PRD v0.1 baseline ([source transcription](./founder-edition-prd-v0.1-source.md)), which this record supersedes for all working purposes.
+
+**Note:** this amendment assumes pre-existing OMNISTACK creative-pipeline infrastructure — Story Architect, World Architect, Power System Architect, Continuity & Canon Integration, Visual Development/Art Direction, a Publishing department, and a "Generated ≠ canon" Founder rule. None of that appears in the real PRD v0.1. PRD v0.2 §18/§19 flags this as an open gap rather than inventing it.
 
 Adds two major first-class OMNISTACK product-development systems:
 
@@ -88,4 +90,4 @@ Its downstream specification sequence:
 
 ---
 
-*Full section-by-section content (I–LVIII of the original submission — TCG Builder mechanics, Indie Game Designer mechanics, shared entities, department architecture, Role Seats, AI routing, Founder-locked rules, lifecycle update, and commercial end state) is integrated in structured form into [`founder-edition-prd-v0.2.md`](../founder-edition-prd-v0.2.md) §2, with full fidelity to the original scope and no content dropped. This record exists for provenance; the PRD is the governing document going forward.*
+*Full section-by-section content (I–LVIII of the original submission — TCG Builder mechanics, Indie Game Designer mechanics, shared entities, department architecture, Role Seats, AI routing, Founder-locked rules, lifecycle update, and commercial end state) is integrated in structured form into [`founder-edition-prd-v0.2.md`](../founder-edition-prd-v0.2.md), split between the testable base-PRD sections (§3–§20, marked 🆕 A001) and the deep specification at §21, with full fidelity to the original scope and no content dropped. This record exists for provenance; the PRD is the governing document going forward.*
