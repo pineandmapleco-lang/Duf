@@ -11,7 +11,7 @@ import { FilesCommsSection } from './components/sections/FilesComms'
 function App() {
   return (
     <DashboardProvider>
-      <div className="min-h-screen bg-mp-bg text-mp-text">
+      <div className="min-h-screen text-mp-text">
         <a
           href="#action-items"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-mp-accent focus:px-4 focus:py-2 focus:text-mp-bg"

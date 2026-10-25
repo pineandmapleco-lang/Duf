@@ -1,5 +1,12 @@
 import type { StatusLevel } from '../types/dashboard'
 
+/** Raw hex values matching the --color-mp-status-* tokens, for contexts (Recharts SVG fills) that can't consume Tailwind/CSS variables directly. */
+export const STATUS_HEX: Record<StatusLevel, string> = {
+  good: '#4ade80',
+  warn: '#fbbf24',
+  bad: '#f87171',
+}
+
 export const STATUS_STYLES: Record<StatusLevel, { bg: string; border: string; text: string; dot: string; label: string }> = {
   good: {
     bg: 'bg-mp-status-good-bg',

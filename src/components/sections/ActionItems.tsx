@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useDashboard } from '../../context/DashboardContext'
 import { SectionShell } from '../ui/SectionShell'
 import { Panel } from '../ui/Panel'
+import { MiniDonut } from '../ui/MiniDonut'
 import { EntityTag } from '../ui/EntityTag'
 import { LoadingBlock } from '../ui/LoadingBlock'
 import { EmptyState } from '../ui/EmptyState'
@@ -88,6 +89,26 @@ export function ActionItemsSection() {
 
   const pendingCount = items.filter((i) => !i.completed).length
 
+  const donutSlices = useMemo(
+    () => [
+      {
+        key: 'overdue',
+        label: 'Overdue',
+        value: items.filter((i) => i.overdue).length,
+        color: '#f87171',
+        dotClassName: 'bg-mp-status-bad',
+      },
+      {
+        key: 'today',
+        label: 'Due today',
+        value: items.filter((i) => !i.overdue).length,
+        color: '#5eead4',
+        dotClassName: 'bg-mp-accent',
+      },
+    ],
+    [items],
+  )
+
   return (
     <SectionShell
       id="action-items"
@@ -116,6 +137,9 @@ export function ActionItemsSection() {
         </EmptyState>
       ) : (
         <>
+          <Panel className="mb-4 w-fit p-4">
+            <MiniDonut slices={donutSlices} centerLabel="Today's split" />
+          </Panel>
           <ul className="space-y-2.5">
             {items.map((item) => (
               <ActionRow key={item.id} item={item} onToggle={toggleTaskComplete} />

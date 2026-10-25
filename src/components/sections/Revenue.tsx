@@ -3,9 +3,11 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'rec
 import { useDashboard } from '../../context/DashboardContext'
 import { SectionShell } from '../ui/SectionShell'
 import { Panel } from '../ui/Panel'
+import { Sparkline } from '../ui/Sparkline'
 import { LoadingBlock } from '../ui/LoadingBlock'
 import { EmptyState } from '../ui/EmptyState'
 import { formatCurrency, formatMonthDay, formatPercent } from '../../lib/format'
+import { useCountUp } from '../../hooks/useCountUp'
 import { ENTITIES } from '../../types/dashboard'
 
 type View = 'unified' | 'entity'
@@ -40,6 +42,8 @@ export function RevenueSection() {
     return data.revenue.trailing90.map((p) => ({ ...p, label: formatMonthDay(p.date) }))
   }, [data])
 
+  const animatedThisMonth = useCountUp(data?.revenue.thisMonthTotal ?? 0)
+
   return (
     <SectionShell
       id="revenue"
@@ -58,8 +62,8 @@ export function RevenueSection() {
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-mp-text-faint">This month (month to date)</p>
               <div className="mt-1 flex flex-wrap items-baseline gap-3">
-                <span className="text-3xl font-extrabold tracking-tight text-mp-gold-strong sm:text-4xl">
-                  {formatCurrency(data.revenue.thisMonthTotal)}
+                <span className="text-3xl font-extrabold tracking-tight text-mp-gold-strong tabular-nums sm:text-4xl">
+                  {formatCurrency(animatedThisMonth)}
                 </span>
                 <ChangeBadge current={data.revenue.thisMonthTotal} previous={data.revenue.lastMonthTotal} />
               </div>
@@ -135,6 +139,7 @@ export function RevenueSection() {
                     <p className="text-xs text-mp-text-muted">{c.label}</p>
                     <p className="mt-1 text-base font-bold text-mp-text">{formatCurrency(c.amount)}</p>
                     <p className="text-[11px] text-mp-gold">{formatPercent(c.amount, grandTotal)} of total</p>
+                    <Sparkline data={c.trend} />
                   </div>
                 ))
               : data.revenue.byEntity.map((e) => (
@@ -142,6 +147,7 @@ export function RevenueSection() {
                     <p className="text-xs text-mp-text-muted">{ENTITIES[e.entity].shortName}</p>
                     <p className="mt-1 text-base font-bold text-mp-text">{formatCurrency(e.amount)}</p>
                     <p className="text-[11px] text-mp-gold">{formatPercent(e.amount, grandTotal)} of total</p>
+                    <Sparkline data={e.trend} />
                   </div>
                 ))}
           </div>

@@ -103,6 +103,8 @@ export interface RevenueCategoryBreakdown {
   category: 'book-ip' | 'client-work' | 'product-sales' | 'ai-consulting'
   label: string
   amount: number
+  /** Last 14 days of daily totals for this category, oldest first — for sparklines. */
+  trend: number[]
 }
 
 export interface RevenuePoint {
@@ -113,6 +115,8 @@ export interface RevenuePoint {
 export interface RevenueByEntity {
   entity: EntityId
   amount: number
+  /** Last 14 days of daily totals for this entity, oldest first — for sparklines. */
+  trend: number[]
 }
 
 export interface RevenueData {

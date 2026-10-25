@@ -45,11 +45,34 @@
   --color-mp-status-bad-border: rgba(248, 113, 113, 0.3);
 
   --animate-fade-in: fade-in 0.4s ease-out;
+  --animate-pulse-dot: pulse-dot 2.4s ease-in-out infinite;
+  --animate-count-up: count-up 0.5s ease-out both;
 
   @keyframes fade-in {
     from {
       opacity: 0;
       transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 0 5px rgba(74, 222, 128, 0);
+    }
+  }
+
+  @keyframes count-up {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
     }
     to {
       opacity: 1;
@@ -73,6 +96,38 @@ body {
 
 #root {
   min-height: 100svh;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Ambient command-center atmosphere: a faint grid underlay plus a soft glow
+   near the top, both fixed so they don't scroll with content. Kept very low
+   contrast on purpose — this is texture, not decoration competing for
+   attention. */
+#root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(94, 234, 212, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(94, 234, 212, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, black, transparent 42%);
+}
+
+#root::after {
+  content: '';
+  position: fixed;
+  top: -20%;
+  left: 50%;
+  translate: -50% 0;
+  z-index: -1;
+  pointer-events: none;
+  width: min(1100px, 140vw);
+  height: 600px;
+  background: radial-gradient(ellipse at center, rgba(94, 234, 212, 0.09), transparent 65%);
 }
 
 * {

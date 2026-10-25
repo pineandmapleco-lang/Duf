@@ -1,14 +1,23 @@
+import { useMemo } from 'react'
 import { useDashboard } from '../../context/DashboardContext'
 import { SectionShell } from '../ui/SectionShell'
 import { Panel } from '../ui/Panel'
 import { StatusBadge } from '../ui/StatusBadge'
+import { StatusDonut } from '../ui/StatusDonut'
 import { LoadingBlock } from '../ui/LoadingBlock'
 import { EmptyState } from '../ui/EmptyState'
 import { formatRelativeTime } from '../../lib/format'
 import { NOTION_LINKS } from '../../lib/data-sources/notion'
+import type { StatusLevel } from '../../types/dashboard'
 
 export function AgentActivitySection() {
   const { data, loading, lastUpdated } = useDashboard()
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<StatusLevel, number> = { good: 0, warn: 0, bad: 0 }
+    for (const a of data?.agents ?? []) counts[a.status]++
+    return counts
+  }, [data])
 
   return (
     <SectionShell
@@ -39,9 +48,13 @@ export function AgentActivitySection() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <>
+          <Panel className="mb-4 w-fit p-4">
+            <StatusDonut counts={statusCounts} label="All agents" />
+          </Panel>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {data.agents.map((agent) => (
-            <Panel key={agent.id} as="article" className="flex flex-col gap-3 p-4">
+            <Panel key={agent.id} as="article" hover className="flex flex-col gap-3 p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h3 className="text-sm font-semibold text-mp-text">{agent.name}</h3>
@@ -78,7 +91,8 @@ export function AgentActivitySection() {
               </a>
             </Panel>
           ))}
-        </div>
+          </div>
+        </>
       )}
     </SectionShell>
   )

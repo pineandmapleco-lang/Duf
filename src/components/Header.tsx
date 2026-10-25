@@ -50,7 +50,9 @@ export function Header() {
             </p>
           </div>
           <span
-            className={`hidden h-2 w-2 rounded-full sm:block ${error ? 'bg-mp-status-bad' : 'bg-mp-status-good'}`}
+            className={`hidden h-2 w-2 rounded-full sm:block ${
+              error ? 'bg-mp-status-bad' : 'bg-mp-status-good animate-pulse-dot'
+            }`}
             aria-hidden="true"
           />
           <button

@@ -3,11 +3,13 @@ import { useDashboard } from '../../context/DashboardContext'
 import { SectionShell } from '../ui/SectionShell'
 import { Panel } from '../ui/Panel'
 import { StatusBadge } from '../ui/StatusBadge'
+import { StatusDonut } from '../ui/StatusDonut'
+import { ProgressRing } from '../ui/ProgressRing'
 import { EntityTag } from '../ui/EntityTag'
 import { LoadingBlock } from '../ui/LoadingBlock'
 import { EmptyState } from '../ui/EmptyState'
 import { formatMonthDay } from '../../lib/format'
-import { ENTITIES, type EntityId } from '../../types/dashboard'
+import { ENTITIES, type EntityId, type StatusLevel } from '../../types/dashboard'
 
 export function ProjectsSection() {
   const { data, loading, lastUpdated } = useDashboard()
@@ -23,6 +25,12 @@ export function ProjectsSection() {
     return filter === 'all' ? data.projects : data.projects.filter((p) => p.entity === filter)
   }, [data, filter])
 
+  const statusCounts = useMemo(() => {
+    const counts: Record<StatusLevel, number> = { good: 0, warn: 0, bad: 0 }
+    for (const p of data?.projects ?? []) counts[p.status]++
+    return counts
+  }, [data])
+
   return (
     <SectionShell
       id="projects"
@@ -36,6 +44,10 @@ export function ProjectsSection() {
         <EmptyState title="No active projects" description="Nothing is currently tracked in the project pipeline." />
       ) : (
         <>
+          <Panel className="mb-4 w-fit p-4">
+            <StatusDonut counts={statusCounts} label="All projects" />
+          </Panel>
+
           <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Filter projects by entity">
             <button
               type="button"
@@ -71,7 +83,7 @@ export function ProjectsSection() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {filtered.map((project) => (
-                <Panel key={project.id} as="article" className="flex flex-col gap-3 p-4">
+                <Panel key={project.id} as="article" hover className="flex flex-col gap-3 p-4">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="text-sm font-semibold text-mp-text">{project.name}</h3>
                     <StatusBadge status={project.status} />
@@ -81,20 +93,16 @@ export function ProjectsSection() {
                   <div className="text-xs text-mp-text-faint">
                     <span className="font-medium text-mp-text-muted">Phase:</span> {project.phase}
                   </div>
-                  <div className="text-xs text-mp-text-faint">
-                    <span className="font-medium text-mp-text-muted">Next:</span> {project.nextMilestone} —{' '}
-                    {formatMonthDay(project.nextMilestoneDate)}
-                  </div>
-                  <div>
-                    <div className="mb-1 flex items-center justify-between text-[11px] text-mp-text-faint">
-                      <span>Progress</span>
-                      <span>{project.percentComplete}%</span>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-xs text-mp-text-faint">
+                      <span className="font-medium text-mp-text-muted">Next:</span> {project.nextMilestone} —{' '}
+                      {formatMonthDay(project.nextMilestoneDate)}
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-mp-bg-raised">
-                      <div
-                        className="h-full rounded-full bg-mp-accent"
-                        style={{ width: `${project.percentComplete}%` }}
-                      />
+                    <div className="relative flex-none">
+                      <ProgressRing percent={project.percentComplete} />
+                      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-mp-text tabular-nums">
+                        {project.percentComplete}
+                      </span>
                     </div>
                   </div>
                 </Panel>

@@ -58,6 +58,9 @@ function revenueMock(): RevenueData {
   const dailyTotals = new Map<string, number>()
   const categoryTotals = new Map<Category['key'], number>()
   const entityTotals = new Map<EntityId, number>()
+  const categoryTrends = new Map<Category['key'], number[]>(CATEGORIES.map((c) => [c.key, []]))
+  const entityTrends = new Map<EntityId, number[]>(PROFILES.map((p) => [p.entity, []]))
+  const SPARKLINE_DAYS = 14
   let thisMonthTotal = 0
   let lastMonthTotal = 0
 
@@ -67,8 +70,10 @@ function revenueMock(): RevenueData {
     const monthKey = format(date, 'yyyy-MM')
     const dayOfWeek = date.getDay()
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+    const inSparklineWindow = offset < SPARKLINE_DAYS
 
     let dayTotal = 0
+    const dayByCategory = new Map<Category['key'], number>()
     for (const profile of PROFILES) {
       const noise = (rng() - 0.5) * 2 * profile.variance
       const weekendAdj = isWeekend ? profile.weekendMultiplier : 1
@@ -76,9 +81,14 @@ function revenueMock(): RevenueData {
       dayTotal += amount
       categoryTotals.set(profile.category, (categoryTotals.get(profile.category) ?? 0) + amount)
       entityTotals.set(profile.entity, (entityTotals.get(profile.entity) ?? 0) + amount)
+      dayByCategory.set(profile.category, (dayByCategory.get(profile.category) ?? 0) + amount)
 
+      if (inSparklineWindow) entityTrends.get(profile.entity)!.push(amount)
       if (monthKey === currentMonthKey) thisMonthTotal += amount
       if (monthKey === lastMonthKey) lastMonthTotal += amount
+    }
+    if (inSparklineWindow) {
+      for (const c of CATEGORIES) categoryTrends.get(c.key)!.push(dayByCategory.get(c.key) ?? 0)
     }
     dailyTotals.set(dateKey, dayTotal)
   }
@@ -91,11 +101,13 @@ function revenueMock(): RevenueData {
     category: c.key,
     label: c.label,
     amount: categoryTotals.get(c.key) ?? 0,
+    trend: categoryTrends.get(c.key) ?? [],
   }))
 
   const byEntity = PROFILES.map((p) => p.entity).map((entity) => ({
     entity,
     amount: entityTotals.get(entity) ?? 0,
+    trend: entityTrends.get(entity) ?? [],
   }))
 
   return { thisMonthTotal, lastMonthTotal, trailing90, categories, byEntity }

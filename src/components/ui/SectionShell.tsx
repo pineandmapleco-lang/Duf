@@ -16,8 +16,14 @@ export function SectionShell({ id, title, description, lastUpdated, actions, chi
     <section
       id={id}
       aria-labelledby={`${id}-heading`}
-      className="scroll-mt-24 animate-fade-in"
+      className="relative scroll-mt-24 animate-fade-in"
     >
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute -left-10 -top-16 -z-10 h-40 w-80 rounded-full blur-3xl ${
+          accent === 'gold' ? 'bg-mp-gold/10' : 'bg-mp-accent/[0.07]'
+        }`}
+      />
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2
