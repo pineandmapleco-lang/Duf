@@ -81,12 +81,12 @@ function filesMock(): DriveFile[] {
 }
 
 async function fetchLiveFiles(): Promise<DriveFile[]> {
-  const token = import.meta.env.VITE_GOOGLE_DRIVE_ACCESS_TOKEN as string | undefined
-  if (!token) {
-    throw new Error('Google Drive live mode requires VITE_GOOGLE_DRIVE_ACCESS_TOKEN')
-  }
-  // Live wiring point: GET https://www.googleapis.com/drive/v3/files
-  // with Authorization: Bearer {token}, orderBy=modifiedTime desc, filtered to project folders.
+  // Live wiring point: same server-side-proxy requirement as Google Calendar
+  // — the OAuth token must stay server-side, never in a VITE_-prefixed env
+  // var. A proxy (e.g. api/google-drive-files.js) would call
+  // GET https://www.googleapis.com/drive/v3/files
+  // orderBy=modifiedTime desc, filtered to project folders, and this
+  // function would fetch() that endpoint instead of calling Google directly.
   throw new Error('Live Google Drive integration not yet implemented — set VITE_GOOGLE_DRIVE_MODE=mock')
 }
 

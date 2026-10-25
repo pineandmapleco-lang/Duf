@@ -56,15 +56,12 @@ function eventsMock(): CalendarEvent[] {
 }
 
 async function fetchLiveEvents(): Promise<CalendarEvent[]> {
-  const token = import.meta.env.VITE_GOOGLE_CALENDAR_ACCESS_TOKEN as string | undefined
-  const calendarId = import.meta.env.VITE_GOOGLE_CALENDAR_ID as string | undefined
-  if (!token || !calendarId) {
-    throw new Error(
-      'Google Calendar live mode requires VITE_GOOGLE_CALENDAR_ACCESS_TOKEN and VITE_GOOGLE_CALENDAR_ID',
-    )
-  }
-  // Live wiring point: GET https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events
-  // with Authorization: Bearer {token}, timeMin/timeMax set to today's bounds.
+  // Live wiring point: an OAuth access token is a real secret and must never
+  // live in a VITE_-prefixed (client-bundled) env var. Add a server-side
+  // proxy — e.g. api/google-calendar-events.js, same pattern as
+  // api/notion-agent-activity.js — that holds the token/refresh flow and
+  // calls GET https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events
+  // with timeMin/timeMax set to today's bounds, then fetch() that endpoint here.
   throw new Error('Live Google Calendar integration not yet implemented — set VITE_GOOGLE_CALENDAR_MODE=mock')
 }
 

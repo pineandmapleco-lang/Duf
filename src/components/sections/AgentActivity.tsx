@@ -30,7 +30,14 @@ export function AgentActivitySection() {
       {loading && !data ? (
         <LoadingBlock rows={4} label="Loading agent activity" />
       ) : !data || data.agents.length === 0 ? (
-        <EmptyState title="No agent activity" description="The AI team roster is currently empty." />
+        <EmptyState
+          title={data?.sourceErrors.agents ? 'Could not load agent activity' : 'No agent activity'}
+          description={
+            data?.sourceErrors.agents
+              ? `${data.sourceErrors.agents} — check NOTION_API_KEY and NOTION_HANDOFF_LEDGER_DATA_SOURCE_ID, or set VITE_NOTION_MODE=mock.`
+              : 'The AI team roster is currently empty.'
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {data.agents.map((agent) => (

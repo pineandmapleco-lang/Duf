@@ -62,13 +62,12 @@ function threadsMock(): FlaggedThread[] {
 }
 
 async function fetchLiveThreads(): Promise<FlaggedThread[]> {
-  const token = import.meta.env.VITE_GMAIL_ACCESS_TOKEN as string | undefined
-  if (!token) {
-    throw new Error('Gmail live mode requires VITE_GMAIL_ACCESS_TOKEN')
-  }
-  // Live wiring point: GET https://gmail.googleapis.com/gmail/v1/users/me/threads
-  // with Authorization: Bearer {token}, then per-thread fetch limited to
-  // metadata (From, Subject) + snippet — never format=full.
+  // Live wiring point: same server-side-proxy requirement as the other
+  // Google sources — the OAuth token must stay server-side. A proxy (e.g.
+  // api/gmail-flagged-threads.js) would call
+  // GET https://gmail.googleapis.com/gmail/v1/users/me/threads
+  // then per-thread fetch limited to metadata (From, Subject) + snippet —
+  // never format=full — and this function would fetch() that endpoint.
   throw new Error('Live Gmail integration not yet implemented — set VITE_GMAIL_MODE=mock')
 }
 

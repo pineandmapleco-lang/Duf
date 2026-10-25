@@ -5,6 +5,7 @@ import type {
   NotionTask,
   ProjectStatus,
   ReleaseCalendarItem,
+  StatusLevel,
 } from '../../types/dashboard'
 
 // Notion (OmniStack) is the primary source of truth for project/release
@@ -439,14 +440,13 @@ function agentActivityMock(): AgentActivity[] {
 }
 
 async function fetchLiveTasks(): Promise<NotionTask[]> {
-  const token = import.meta.env.VITE_NOTION_API_KEY as string | undefined
-  const databaseId = import.meta.env.VITE_NOTION_TASKS_DB_ID as string | undefined
-  if (!token || !databaseId) {
-    throw new Error('Notion live mode requires VITE_NOTION_API_KEY and VITE_NOTION_TASKS_DB_ID')
-  }
-  // Live wiring point: POST to https://api.notion.com/v1/databases/{databaseId}/query
-  // with the bearer token above, then map results into NotionTask[].
-  throw new Error('Live Notion integration not yet implemented — set VITE_NOTION_MODE=mock')
+  // Live wiring point: add a server-side proxy (see api/notion-agent-activity.js
+  // for the pattern) that queries the real Tasks data source and returns raw
+  // rows for mapping here. Not yet implemented — the real workspace has
+  // several "Tasks" databases, and the live one tags brand with a coarse
+  // "Division" field (Consumer Brands) rather than one value per entity, so
+  // this needs a product decision before it's wired up.
+  throw new Error('Live Notion Tasks integration not yet implemented — set VITE_NOTION_MODE=mock')
 }
 
 export async function getNotionTasks(): Promise<NotionTask[]> {
@@ -457,7 +457,9 @@ export async function getNotionTasks(): Promise<NotionTask[]> {
 
 export async function getNotionProjects(): Promise<ProjectStatus[]> {
   if (getSourceMode('notion') === 'live') {
-    throw new Error('Live Notion integration not yet implemented — set VITE_NOTION_MODE=mock')
+    // Live wiring point: same server-side proxy pattern as Agent Activity,
+    // querying the Projects/Release Status data source. Not yet implemented.
+    throw new Error('Live Notion Projects integration not yet implemented — set VITE_NOTION_MODE=mock')
   }
   await mockDelay()
   return projectsMock()
@@ -465,26 +467,141 @@ export async function getNotionProjects(): Promise<ProjectStatus[]> {
 
 export async function getReleaseCalendar(): Promise<ReleaseCalendarItem[]> {
   if (getSourceMode('notion') === 'live') {
-    throw new Error('Live Notion integration not yet implemented — set VITE_NOTION_MODE=mock')
+    // Live wiring point: same proxy pattern. The real workspace has multiple
+    // "Release Calendar" databases (Master Release Calendar, 2027 Release
+    // Calendar, ...) — needs the canonical one confirmed before wiring.
+    throw new Error('Live Notion Release Calendar integration not yet implemented — set VITE_NOTION_MODE=mock')
   }
   await mockDelay()
   return releaseCalendarMock()
 }
 
-export async function getAgentActivity(): Promise<AgentActivity[]> {
-  if (getSourceMode('notion') === 'live') {
-    throw new Error('Live Notion integration not yet implemented — set VITE_NOTION_MODE=mock')
+// Static roster metadata (name/role/Notion deep link) for the seven agents
+// this dashboard tracks. Live mode fills in status/assignment/handoffs from
+// the real Handoff Ledger; mock mode uses agentActivityMock() below instead.
+interface AgentRosterMeta {
+  id: string
+  name: string
+  role: string
+  notionUrl: string
+}
+
+const AGENT_ROSTER_META: AgentRosterMeta[] = [
+  { id: 'agent-chad', name: 'Chad', role: 'Chief AI Officer', notionUrl: `${NOTION_WORKSPACE_URL}/agents/chad` },
+  {
+    id: 'agent-claude',
+    name: 'Claude',
+    role: 'Research Director / Canon Architect',
+    notionUrl: `${NOTION_WORKSPACE_URL}/agents/claude`,
+  },
+  {
+    id: 'agent-dispatch',
+    name: 'Dispatch',
+    role: 'Engineering / Implementation',
+    notionUrl: `${NOTION_WORKSPACE_URL}/agents/dispatch`,
+  },
+  { id: 'agent-codey', name: 'Codey', role: 'Technical Engineering', notionUrl: `${NOTION_WORKSPACE_URL}/agents/codey` },
+  {
+    id: 'agent-gem',
+    name: 'Gem',
+    role: 'Multimodal / Trend Scouting',
+    notionUrl: `${NOTION_WORKSPACE_URL}/agents/gem`,
+  },
+  { id: 'agent-manus', name: 'Manus', role: 'Execution Director', notionUrl: `${NOTION_WORKSPACE_URL}/agents/manus` },
+  {
+    id: 'agent-brain',
+    name: 'Main AI Brain',
+    role: 'Orchestration',
+    notionUrl: `${NOTION_WORKSPACE_URL}/agents/main-brain`,
+  },
+]
+
+const AUTHORITY_TO_STATUS: Record<string, StatusLevel> = { Green: 'good', Yellow: 'warn', Red: 'bad' }
+
+// Minimal shape of a raw Notion page row as returned by the Handoff Ledger
+// query — only the bits this mapper reads.
+interface NotionPropertyValue {
+  title?: { plain_text: string }[]
+  rich_text?: { plain_text: string }[]
+  select?: { name: string }
+  date?: { start: string }
+}
+interface NotionLedgerRow {
+  id: string
+  properties: Record<string, NotionPropertyValue>
+}
+
+function plainText(prop: NotionPropertyValue | undefined): string {
+  const parts = prop?.title ?? prop?.rich_text
+  return parts?.map((t) => t.plain_text).join('') ?? ''
+}
+
+function selectName(prop: NotionPropertyValue | undefined): string | undefined {
+  return prop?.select?.name
+}
+
+function dateStart(prop: NotionPropertyValue | undefined): string | undefined {
+  return prop?.date?.start
+}
+
+async function fetchLiveAgentActivity(): Promise<AgentActivity[]> {
+  const response = await fetch('/api/notion-agent-activity')
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { error?: string }
+    throw new Error(body.error ?? `Notion proxy returned HTTP ${response.status}`)
   }
+  const { results } = (await response.json()) as { results: NotionLedgerRow[] }
+
+  return AGENT_ROSTER_META.map((meta) => {
+    const nameLower = meta.name.toLowerCase()
+    const involving = results.filter((row) => {
+      const from = plainText(row.properties['From']).toLowerCase()
+      const to = plainText(row.properties['To']).toLowerCase()
+      return from.includes(nameLower) || to.includes(nameLower)
+    })
+    const received = involving.find((row) => plainText(row.properties['To']).toLowerCase().includes(nameLower))
+    const sent = involving.find((row) => plainText(row.properties['From']).toLowerCase().includes(nameLower))
+    const latest = involving[0]
+
+    return {
+      id: meta.id,
+      name: meta.name,
+      role: meta.role,
+      status: AUTHORITY_TO_STATUS[selectName(latest?.properties['Authority']) ?? ''] ?? 'good',
+      currentAssignment: latest
+        ? plainText(latest.properties['Task / Handoff']) || plainText(latest.properties['Next Action']) || 'No current assignment logged'
+        : 'No recent handoff activity',
+      lastHandoffReceived: received
+        ? {
+            withWhom: plainText(received.properties['From']) || '—',
+            summary: plainText(received.properties['Task / Handoff']),
+            time: dateStart(received.properties['Created']) ?? new Date().toISOString(),
+          }
+        : { withWhom: '—', summary: 'No recent handoff received', time: new Date().toISOString() },
+      lastHandoffSent: sent
+        ? {
+            withWhom: plainText(sent.properties['To']) || '—',
+            summary: plainText(sent.properties['Task / Handoff']),
+            time: dateStart(sent.properties['Created']) ?? new Date().toISOString(),
+          }
+        : { withWhom: '—', summary: 'No recent handoff sent', time: new Date().toISOString() },
+      notionUrl: meta.notionUrl,
+    }
+  })
+}
+
+export async function getAgentActivity(): Promise<AgentActivity[]> {
+  if (getSourceMode('notion') === 'live') return fetchLiveAgentActivity()
   await mockDelay()
   return agentActivityMock()
 }
 
 export async function setNotionTaskComplete(taskId: string, completed: boolean): Promise<void> {
   if (getSourceMode('notion') === 'live') {
-    const token = import.meta.env.VITE_NOTION_API_KEY as string | undefined
-    if (!token) throw new Error('Notion live mode requires VITE_NOTION_API_KEY')
-    // Live wiring point: PATCH https://api.notion.com/v1/pages/{taskId}
-    // with { properties: { Status: { status: { name: completed ? 'Done' : 'To-do' } } } }
+    // Live wiring point: add a server-side proxy (api/notion-task-complete.js)
+    // that PATCHes https://api.notion.com/v1/pages/{taskId} with
+    // { properties: { Status: { status: { name: completed ? 'Done' : 'To-do' } } } }
+    // using NOTION_API_KEY server-side. Not yet implemented.
     throw new Error(
       `Live Notion write-back not yet implemented for task ${taskId} (completed=${completed}) — set VITE_NOTION_MODE=mock`,
     )

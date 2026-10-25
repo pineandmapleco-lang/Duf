@@ -49,18 +49,12 @@ Each of the four external integrations lives in its own module under
 data via its own environment variable — flipping one to live never touches
 component code.
 
-| Source | Module | Purpose | Mode variable |
-|---|---|---|---|
-| Notion (OmniStack) | `notion.ts` | Tasks, project/release status, AI-agent activity, revenue tracker | `VITE_NOTION_MODE` |
-| Google Calendar | `google-calendar.ts` | Today's scheduled events/deadlines | `VITE_GOOGLE_CALENDAR_MODE` |
-| Google Drive | `google-drive.ts` | Recently modified project files | `VITE_GOOGLE_DRIVE_MODE` |
-| Gmail | `gmail.ts` | Flagged threads needing a reply (subject + sender + snippet only) | `VITE_GMAIL_MODE` |
-
-Set a mode to `live` and supply its credentials (see `.env.example`) to wire
-up the real API. Each live function currently throws a clear "not yet
-implemented" error naming the exact endpoint it should call — that's the
-seam to fill in once OAuth is set up on your end; the mock path keeps
-working for every other source in the meantime.
+| Source | Module | Purpose | Mode variable | Live status |
+|---|---|---|---|---|
+| Notion (OmniStack) | `notion.ts` | Tasks, project/release status, AI-agent activity, revenue tracker | `VITE_NOTION_MODE` | **AI Agent Activity is wired up.** Tasks/Projects/Release Calendar are still mock-only (see note below). |
+| Google Calendar | `google-calendar.ts` | Today's scheduled events/deadlines | `VITE_GOOGLE_CALENDAR_MODE` | Mock-only — needs a server-side proxy (see Architecture below) |
+| Google Drive | `google-drive.ts` | Recently modified project files | `VITE_GOOGLE_DRIVE_MODE` | Mock-only — needs a server-side proxy |
+| Gmail | `gmail.ts` | Flagged threads needing a reply (subject + sender + snippet only) | `VITE_GMAIL_MODE` | Mock-only — needs a server-side proxy |
 
 Copy `.env.example` to `.env.local` and fill in what you need:
 
@@ -68,18 +62,83 @@ Copy `.env.example` to `.env.local` and fill in what you need:
 cp .env.example .env.local
 ```
 
-### Wiring up each connection
+### Architecture: secrets never go in the browser
 
-- **Notion** — create an internal integration at
-  [notion.so/my-integrations](https://www.notion.so/my-integrations), share
-  your tasks/projects/calendar/agent-log databases with it, and drop the
-  token + database IDs into `.env.local`.
-- **Google Calendar / Drive / Gmail** — these need an OAuth2 access token
-  scoped read-only (`calendar.readonly`, `drive.readonly`,
-  `gmail.readonly`). The simplest path for a personal dashboard is Google's
-  [OAuth 2.0 Playground](https://developers.google.com/oauthplayground) to
-  mint a token for local use; for anything longer-lived, set up a proper
-  OAuth client and refresh-token flow.
+This matters once you deploy anywhere beyond your own `localhost`. Vite
+bundles every `VITE_`-prefixed env var straight into the client-side JS —
+anyone who opens dev tools on a deployed site can read it. Real credentials
+(API tokens, OAuth access tokens) are never set as `VITE_*` vars here.
+Instead:
+
+- Real secrets live in plain (non-`VITE_`) env vars, read only by small
+  serverless functions under `/api/` — e.g. `api/notion-agent-activity.js`.
+  Set these in your deployment platform's project settings (Vercel →
+  Project → Settings → Environment Variables), not in `.env.local` for
+  production.
+- The browser calls `fetch('/api/notion-agent-activity')` — a same-origin,
+  unauthenticated-from-the-client request — and the serverless function is
+  the only thing that ever attaches the real Notion token.
+- `VITE_*_MODE` vars (`mock`/`live`) are *not* secrets and are fine
+  client-side — they just toggle which code path runs.
+- Local testing of `/api/` routes requires the Vercel CLI, since plain
+  `vite dev` doesn't execute serverless functions:
+  ```bash
+  npm install -g vercel
+  vercel dev
+  ```
+  Plain `npm run dev` still works for everything else — mock mode is the
+  default, so you only need `vercel dev` when testing a live integration.
+
+### Wiring up AI Agent Activity (the one real integration today)
+
+1. Create a Notion internal integration at
+   [notion.so/my-integrations](https://www.notion.so/my-integrations) and
+   copy its token.
+2. In Notion, share the **"OMNISTACK — Handoff Ledger"** database with that
+   integration (•••  menu → Connections → add the integration).
+3. Set these as server-side env vars (Vercel project settings, or
+   `.env.local` for `vercel dev`):
+   ```
+   NOTION_API_KEY=secret_...
+   NOTION_HANDOFF_LEDGER_DATA_SOURCE_ID=7b47767d-8ad6-4003-8a27-6a0bf67f9bd8
+   ```
+   That data source id is the real "OMNISTACK — Handoff Ledger" in the
+   Maple & Pine workspace — no need to look it up again unless the database
+   is recreated.
+4. Set `VITE_NOTION_MODE=live` (this one's safe client-side — it's just a
+   flag).
+5. `vercel dev` locally, or deploy — the Agent Activity section will now
+   show real status/assignment/handoffs for Chad, Claude, Dispatch, Codey,
+   Gem, Manus, and Main AI Brain, derived from the ledger's `From`/`To`/
+   `Authority`/`Status` fields.
+
+### Why Tasks, Projects, Release Calendar, and Revenue are still mock
+
+The real Notion workspace has these, but with some open questions that need
+a decision before wiring them up safely:
+
+- There are **multiple "Tasks" and "Release Calendar" databases** in the
+  workspace — picking the wrong one would show stale or wrong data.
+- The real Tasks database tags brand with a **"Division" field** whose
+  values are broader than this dashboard's five entities (e.g. Black Goat,
+  Element No.34, Maddy Made Them, and Eats & Treats all fall under one
+  "Consumer Brands" value) — so today's per-entity breakdown wouldn't
+  actually distinguish between them without a workspace change or a
+  different mapping.
+- No live, transaction-level **revenue tracker** was found — just strategy
+  pages and a few pages literally titled "[PLACEHOLDER]".
+
+Each of these live functions throws a clear "not yet implemented" error
+naming what's blocking it (see `src/lib/data-sources/notion.ts`) — the mock
+path keeps working for all of them in the meantime.
+
+### Google Calendar / Drive / Gmail
+
+Not yet wired to live data. These need the same server-side-proxy treatment
+as Notion (an OAuth access token is a real secret, same rule as above) —
+add `api/google-calendar-events.js`, `api/google-drive-files.js`, and
+`api/gmail-flagged-threads.js` following the `api/notion-agent-activity.js`
+pattern, each holding its own token server-side.
 
 All four sources auto-refresh every 5 minutes once live, with a per-section
 "last updated" timestamp and a single "last synced" indicator in the header.
