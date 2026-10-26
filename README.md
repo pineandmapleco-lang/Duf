@@ -51,7 +51,7 @@ component code.
 
 | Source | Module | Purpose | Mode variable | Live status |
 |---|---|---|---|---|
-| Notion (OmniStack) | `notion.ts` | Tasks, project/release status, AI-agent activity, revenue tracker | `VITE_NOTION_MODE` | **AI Agent Activity is wired up.** Tasks/Projects/Release Calendar are still mock-only (see note below). |
+| Notion (OmniStack) | `notion.ts` | Tasks, project/release status, AI-agent activity, revenue tracker | `VITE_NOTION_MODE` | **AI Agent Activity and Release Calendar are wired up.** Tasks/Projects are still mock-only (see note below). |
 | Google Calendar | `google-calendar.ts` | Today's scheduled events/deadlines | `VITE_GOOGLE_CALENDAR_MODE` | Mock-only — needs a server-side proxy (see Architecture below) |
 | Google Drive | `google-drive.ts` | Recently modified project files | `VITE_GOOGLE_DRIVE_MODE` | Mock-only — needs a server-side proxy |
 | Gmail | `gmail.ts` | Flagged threads needing a reply (subject + sender + snippet only) | `VITE_GMAIL_MODE` | Mock-only — needs a server-side proxy |
@@ -112,21 +112,44 @@ Instead:
    Gem, Manus, and Main AI Brain, derived from the ledger's `From`/`To`/
    `Authority`/`Status` fields.
 
-### Why Tasks, Projects, Release Calendar, and Revenue are still mock
+### Wiring up Release & Ritual Calendar
 
-The real Notion workspace has these, but with some open questions that need
-a decision before wiring them up safely:
+1. Same Notion integration as above (one token covers every database you
+   share with it).
+2. Share the **"Master Release Calendar"** database with the integration
+   (not the "2027 Release Calendar" database — that one's a sparse,
+   mostly-empty placeholder for a different, TCG-specific product line; the
+   Master calendar is the real, actively-maintained one).
+3. Add this server-side env var alongside the others:
+   ```
+   NOTION_RELEASE_CALENDAR_DATA_SOURCE_ID=ec3cc5f8-1f79-4c75-ad47-c09322f09b1e
+   ```
+4. `VITE_NOTION_MODE=live` (same flag covers both Notion integrations).
+5. Every row from this database is a WiseMinds Studios property, so entity
+   is hardcoded to `wiseminds` rather than resolved from Notion — the
+   database's own "Release Type" field (Book Release, Festival Special,
+   Council Gate Review, etc.) maps onto this dashboard's 4-way
+   release/marketing/ritual/deadline kind.
 
-- There are **multiple "Tasks" and "Release Calendar" databases** in the
-  workspace — picking the wrong one would show stale or wrong data.
-- The real Tasks database tags brand with a **"Division" field** whose
-  values are broader than this dashboard's five entities (e.g. Black Goat,
-  Element No.34, Maddy Made Them, and Eats & Treats all fall under one
-  "Consumer Brands" value) — so today's per-entity breakdown wouldn't
-  actually distinguish between them without a workspace change or a
-  different mapping.
-- No live, transaction-level **revenue tracker** was found — just strategy
-  pages and a few pages literally titled "[PLACEHOLDER]".
+### Why Tasks and Projects are still mock
+
+Checked the real Notion workspace directly before wiring anything, and both
+have real blockers — not just "pick the right database":
+
+- **Tasks**: multiple candidate databases exist, and the canonical one tags
+  brand with a **"Division" field** broader than this dashboard's five
+  entities (Black Goat, Element No.34, Maddy Made Them, and Eats & Treats
+  all collapse into one "Consumer Brands" value) — so a live per-entity
+  breakdown wouldn't actually distinguish between them without a workspace
+  change.
+- **Projects**: the canonical WiseMinds project tracker
+  ("Studio_Projects") is **completely empty** — zero rows. The client-work
+  tracker has exactly one row, still marked "Prospect." Black Goat's
+  commissions aren't in a queryable database at all, just a section inside
+  a hub page. Wiring this live today would show *less* than the current
+  mock data, not more — the gap is real data in Notion, not code.
+- No live, transaction-level **revenue tracker** was found either — just
+  strategy pages and a few pages literally titled "[PLACEHOLDER]".
 
 Each of these live functions throws a clear "not yet implemented" error
 naming what's blocking it (see `src/lib/data-sources/notion.ts`) — the mock

@@ -111,7 +111,14 @@ export function ReleaseCalendarSection() {
       {loading && !data ? (
         <LoadingBlock rows={2} label="Loading release calendar" />
       ) : upcoming.length === 0 ? (
-        <EmptyState title="Nothing scheduled in the next 60 days" description="The release calendar is clear for now." />
+        <EmptyState
+          title={data?.sourceErrors.releaseCalendar ? 'Could not load the release calendar' : 'Nothing scheduled in the next 60 days'}
+          description={
+            data?.sourceErrors.releaseCalendar
+              ? `${data.sourceErrors.releaseCalendar} — check NOTION_API_KEY and NOTION_RELEASE_CALENDAR_DATA_SOURCE_ID, or set VITE_NOTION_MODE=mock.`
+              : 'The release calendar is clear for now.'
+          }
+        />
       ) : (
         <>
           <TimelineChart items={upcoming} expandedId={expandedId} onSelect={handleSelect} />

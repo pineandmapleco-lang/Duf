@@ -466,12 +466,7 @@ export async function getNotionProjects(): Promise<ProjectStatus[]> {
 }
 
 export async function getReleaseCalendar(): Promise<ReleaseCalendarItem[]> {
-  if (getSourceMode('notion') === 'live') {
-    // Live wiring point: same proxy pattern. The real workspace has multiple
-    // "Release Calendar" databases (Master Release Calendar, 2027 Release
-    // Calendar, ...) — needs the canonical one confirmed before wiring.
-    throw new Error('Live Notion Release Calendar integration not yet implemented — set VITE_NOTION_MODE=mock')
-  }
+  if (getSourceMode('notion') === 'live') return fetchLiveReleaseCalendar()
   await mockDelay()
   return releaseCalendarMock()
 }
@@ -542,6 +537,55 @@ function selectName(prop: NotionPropertyValue | undefined): string | undefined {
 
 function dateStart(prop: NotionPropertyValue | undefined): string | undefined {
   return prop?.date?.start
+}
+
+// The real "Master Release Calendar" data source covers far more release
+// types than our 4-way kind enum — this collapses them onto it. Everything
+// from this source is a WiseMinds Studios narrative/IP property, so entity
+// is hardcoded rather than resolved from the (relation-typed) IP column.
+const RELEASE_TYPE_TO_KIND: Record<string, ReleaseCalendarItem['kind']> = {
+  'Book Release': 'release',
+  'Chapter Drop': 'release',
+  'Codex Release': 'release',
+  'Set Release': 'release',
+  'Preorder Launch': 'release',
+  'Print Proof / Manufacturing': 'release',
+  'Shipping / Fulfillment': 'release',
+  'Website Drop': 'marketing',
+  'Cover Reveal': 'marketing',
+  'Trailer/Video': 'marketing',
+  'Festival Special': 'ritual',
+  Prerelease: 'deadline',
+  'Patch/Balance': 'deadline',
+  'Playtest Milestone': 'deadline',
+  'Council Gate Review': 'deadline',
+}
+
+async function fetchLiveReleaseCalendar(): Promise<ReleaseCalendarItem[]> {
+  const response = await fetch('/api/notion-release-calendar')
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { error?: string }
+    throw new Error(body.error ?? `Notion proxy returned HTTP ${response.status}`)
+  }
+  const { results } = (await response.json()) as { results: NotionLedgerRow[] }
+
+  return results
+    .map((row): ReleaseCalendarItem | null => {
+      const date = dateStart(row.properties['Date'])
+      if (!date) return null
+      const releaseType = selectName(row.properties['Release Type']) ?? ''
+      const status = selectName(row.properties['Status']) ?? ''
+      const notes = plainText(row.properties['Notes'])
+      return {
+        id: row.id,
+        title: plainText(row.properties['Name']) || 'Untitled release',
+        entity: 'wiseminds',
+        date,
+        kind: RELEASE_TYPE_TO_KIND[releaseType] ?? 'release',
+        detail: notes || [releaseType, status].filter(Boolean).join(' — ') || 'No further detail logged.',
+      }
+    })
+    .filter((item): item is ReleaseCalendarItem => item !== null)
 }
 
 async function fetchLiveAgentActivity(): Promise<AgentActivity[]> {
